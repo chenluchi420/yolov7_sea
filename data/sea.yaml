@@ -1,0 +1,10 @@
+
+train: D:\Yun\sea_trash\train_data\
+val: D:\Yun\sea_trash\valid_data\
+test: ./coco/test-dev2017.txt  
+
+
+nc: 20
+
+# class names
+names: [ 'WASTE_1', 'WASTE_2', 'WASTE_3', 'WASTE_4', 'WASTE_5', 'WASTE_6', 'WASTE_7', 'WASTE_8', 'WASTE_9', 'WASTE_10', 'WASTE_11', 'WASTE_12', 'WASTE_13', 'WASTE_14', 'WASTE_15', 'WASTE_16', 'WASTE_17', 'WASTE_18', 'WASTE_19', 'WASTE_20']
