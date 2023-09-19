@@ -1,0 +1,10 @@
+Training optimization:
+    K-fold 
+    Long-Short Tail Distrubution
+    Few-Shot Learning
+
+Other steps:
+    Data augmentation
+
+Data features:
+    Check if location influence waste items

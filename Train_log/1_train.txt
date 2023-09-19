@@ -9,3 +9,9 @@ augement hyp: original, no modify
 data: original, removed corrupted files 
 train: 9457 images 
 valid: 496 images
+
+Next training plan:
+1, corrupted file add in 
+2, change into chinese spelling
+3, wrong label file modify
+4, Do futher data augment at 3rd training
