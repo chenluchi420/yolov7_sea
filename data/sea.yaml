@@ -1,6 +1,10 @@
 
-train: D:\Yun\sea_trash\train_data\
-val: D:\Yun\sea_trash\valid_data\
+train: 
+- D:\Yun\sea_trash\train_data\
+- D:\Yun\sea_trash\corrupt_data\train
+val: 
+- D:\Yun\sea_trash\valid_data\
+- D:\Yun\sea_trash\corrupt_data\valid
 test: ./coco/test-dev2017.txt  
 
 

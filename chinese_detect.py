@@ -53,11 +53,11 @@ def detect(save_img=False):
         view_img = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadStreams(source, img_size=imgsz, stride=stride)
-    else:
-        dataset = LoadImages(source, img_size=imgsz, stride=stride)
-    
     # else:
     #     dataset = LoadImages(source, img_size=imgsz, stride=stride)
+    
+    else:
+        dataset = Load_chinese_filname_Images(source, img_size=imgsz, stride=stride)
 
     # Get names and colors
     names = model.module.names if hasattr(model, 'module') else model.names
