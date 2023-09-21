@@ -262,7 +262,7 @@ class Load_chinese_filname_Images:  # for inference
         else:
             # Read image
             self.count += 1
-            data_path = (open(path),"rb")
+            data_path = open(path,"rb")
             bytes = bytearray(data_path.read())
             numpyarray = np.asarray(bytes, dtype = np.uint8)
             img0 = cv2.imdecode(numpyarray, cv2.IMREAD_UNCHANGED)
