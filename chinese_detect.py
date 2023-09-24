@@ -1,12 +1,12 @@
 import argparse
 import time
 from pathlib import Path
-
+import json
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
-
+import os 
 from models.experimental import attempt_load
 from utils.datasets import LoadStreams, LoadImages, Load_chinese_filname_Images
 from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
@@ -42,7 +42,7 @@ def detect(save_img=False):
         model.half()  # to FP16
 
     # Second-stage classifier
-    classify = False
+    classify = True
     if classify:
         modelc = load_classifier(name='resnet101', n=2)  # initialize
         modelc.load_state_dict(torch.load('weights/resnet101.pt', map_location=device)['model']).to(device).eval()
@@ -70,6 +70,8 @@ def detect(save_img=False):
     old_img_b = 1
 
     t0 = time.time()
+    
+    
     for path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -91,6 +93,8 @@ def detect(save_img=False):
             pred = model(img, augment=opt.augment)[0]
         t2 = time_synchronized()
 
+        
+        
         # Apply NMS
         pred = non_max_suppression(pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
         t3 = time_synchronized()
@@ -124,13 +128,19 @@ def detect(save_img=False):
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         line = (cls, *xywh, conf) if opt.save_conf else (cls, *xywh)  # label format
+                        
                         with open(txt_path + '.txt', 'a') as f:
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
+                        
+                        
 
                     if save_img or view_img:  # Add bbox to image
                         label = f'{names[int(cls)]} {conf:.2f}'
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=1)
-
+                line_shape = str(str(im0.shape[0])+ " "+ str(im0.shape[1]))
+                with open(txt_path + '.txt', 'a') as f:
+                    f.write(line_shape+ '\n')
+                
             # Print time (inference + NMS)
             print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
 
@@ -144,6 +154,7 @@ def detect(save_img=False):
                 if dataset.mode == 'image':
                     # print(type(im0))
                     # cv2.imwrite(save_path, im0)
+                    
                     cv2.imencode('.jpg', im0)[1].tofile(save_path)
                     print(f" The image with the result is saved in: {save_path}")
                 else:  # 'video' or 'stream'
@@ -164,6 +175,60 @@ def detect(save_img=False):
     if save_txt or save_img:
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
         #print(f"Results saved to {save_dir}{s}")
+
+    # generate json
+    output = {}
+    output["result"] = []
+    names = [ 'WASTE_1', 'WASTE_2', 'WASTE_3', 'WASTE_4', 'WASTE_5', 'WASTE_6', 'WASTE_7', 'WASTE_8', 'WASTE_9', 'WASTE_10', 'WASTE_11', 'WASTE_12', 'WASTE_13', 'WASTE_14', 'WASTE_15', 'WASTE_16', 'WASTE_17', 'WASTE_18', 'WASTE_19', 'WASTE_20']
+
+    result_folder = str(save_dir) + "\labels\\"
+    for i, file in enumerate(os.listdir(result_folder)):
+        print(file)
+        detect_result = {}
+        detect_result["IMG_PATH"] = f"images/{file.rsplit('.')[0]}.jpg"
+        detect_result["BOUNDING_BOX"] = []
+
+        
+        with open(f"{result_folder}/{file}", "r") as f:
+            
+            lines = f.readlines()
+            
+            print(lines[-1])
+            img_info_line = lines[-1].split(" ")
+            image_width = int(img_info_line[1].strip())
+            image_height = int(img_info_line[0].strip())
+                
+            for line in lines[:-1]:
+                line = line.split(" ")
+                X_center, Y_center, X_width, Y_height = float(line[1]), float(line[2]), float(line[3]), float(line[4])
+                label_name = [int(line[0])]+1
+                
+                X_center_cord = int(X_center*image_width)
+                Y_center_cord = int(Y_center*image_height)
+                
+                bnb_X_width = int((X_width * image_width)/2)
+                bnb_Y_height = int((Y_height*image_height)/2)
+                
+                left_top_x = X_center_cord - bnb_X_width
+                left_top_y = Y_center_cord - bnb_Y_height
+                
+                right_bottom_x = X_center_cord + bnb_X_width
+                right_bottom_y = Y_center_cord + bnb_Y_height
+                
+                box = {}
+                box["x1"] = int(left_top_x)
+                box["y1"] = int(left_top_y)
+                box["x2"] = int(right_bottom_x)
+                box["y2"] = int(right_bottom_y)
+                box["label_id"] = label_name
+                box["score"] = float(line[-1].strip())
+                
+                detect_result["BOUNDING_BOX"].append(box)
+            
+        output["result"].append(detect_result)    
+    with open(f"{result_folder.rsplit('/')[0]}/result.json", "w", encoding='utf-8') as outfile:
+        json.dump(output, outfile, indent = 4, ensure_ascii = False)   
+                
 
     print(f'Done. ({time.time() - t0:.3f}s)')
 
@@ -188,6 +253,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
+    # parser.add_argument('--save-json', action='store_true', help='don`t trace model')
     opt = parser.parse_args()
     print(opt)
     #check_requirements(exclude=('pycocotools', 'thop'))
@@ -199,3 +265,5 @@ if __name__ == '__main__':
                 strip_optimizer(opt.weights)
         else:
             detect()
+        
+    
